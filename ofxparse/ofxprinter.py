@@ -48,6 +48,29 @@ class OfxPrinter():
             strdt_msec = strdt_msec[:msec_digs]
         return strdt + '.' + strdt_msec
 
+    def writeInvestTrn(self, trn, tabs=5):
+        self.writeLine("<STMTTRN>", tabs=tabs)
+        tabs += 1
+
+        self.writeLine("<TRNTYPE>{}".format(trn.type.upper()), tabs=tabs)
+        self.writeLine("<DTSETTLE>{}".format(self.printDate(trn.settleDate)), tabs=tabs)
+        self.writeLine("<DTTRADE>{}".format(self.printDate(trn.tradeDate)), tabs=tabs)
+
+        self.writeLine("<FITID>{}".format(trn.id), tabs=tabs)
+        self.writeLine("<INCOMETYPE>{}".format(trn.income_type), tabs=tabs)
+        self.writeLine("<UNITS>{}".format(float(trn.units)), tabs=tabs)
+        self.writeLine("<UNITPRICE>{}".format(float(trn.unit_price)), tabs=tabs)
+        self.writeLine("<COMMISSION>{}".format(float(trn.commission)), tabs=tabs)
+        self.writeLine("<FEES>{}".format(float(trn.fees)), tabs=tabs)
+        self.writeLine("<TOTAL>{}".format(float(trn.total)), tabs=tabs)
+        self.writeLine("<TFERACTION>{}".format(trn.tferaction), tabs=tabs)
+
+        if len(trn.memo.strip()) > 0:
+            self.writeLine("<MEMO>{}".format(trn.memo), tabs=tabs)
+
+        tabs -= 1
+        self.writeLine("</STMTTRN>", tabs=tabs)
+
     def writeTrn(self, trn, tabs=5):
         self.writeLine("<STMTTRN>", tabs=tabs)
         tabs += 1
@@ -97,54 +120,92 @@ class OfxPrinter():
             ), tabs=tabs+1)
             self.writeLine("</AVAILBAL>", tabs=tabs)
 
+    def writeBnkAcctStmTrs(self,tabs,acct):
+        self.writeLine("<STMTRS>", tabs=tabs)
+        tabs += 1
+
+        if acct.curdef:
+            self.writeLine("<CURDEF>{0}".format(
+                acct.curdef
+            ), tabs=tabs)
+
+        if acct.routing_number or acct.account_id or acct.account_type:
+            self.writeLine("<BANKACCTFROM>", tabs=tabs)
+            if acct.routing_number:
+                self.writeLine("<BANKID>{0}".format(
+                    acct.routing_number
+                ), tabs=tabs + 1)
+            if acct.account_id:
+                self.writeLine("<ACCTID>{0}".format(
+                    acct.account_id
+                ), tabs=tabs + 1)
+            if acct.account_type:
+                self.writeLine("<ACCTTYPE>{0}".format(
+                    acct.account_type
+                ), tabs=tabs + 1)
+            self.writeLine("</BANKACCTFROM>", tabs=tabs)
+
+        self.writeLine("<BANKTRANLIST>", tabs=tabs)
+        tabs += 1
+        self.writeLine("<DTSTART>{0}".format(
+            self.printDate(acct.statement.start_date)
+        ), tabs=tabs)
+        self.writeLine("<DTEND>{0}".format(
+            self.printDate(acct.statement.end_date)
+        ), tabs=tabs)
+
+        for trn in acct.statement.transactions:
+            self.writeTrn(trn, tabs=tabs)
+
+        tabs -= 1
+
+        self.writeLine("</BANKTRANLIST>", tabs=tabs)
+
+        self.writeLedgerBal(acct.statement, tabs=tabs)
+        self.writeAvailBal(acct.statement, tabs=tabs)
+
+        tabs -= 1
+
+        self.writeLine("</STMTRS>", tabs=tabs)
+
+    def writeInvestAcctStmTrs(self,tabs,acct):
+        self.writeLine("<STMTRS>", tabs=tabs)
+        tabs += 1
+
+        if acct.curdef:
+            self.writeLine("<CURDEF>{0}".format(
+                acct.curdef
+            ), tabs=tabs)
+
+        self.writeLine("<INVSTMTRS>", tabs=tabs)
+        tabs += 1
+        # self.writeLine("<DTSTART>{0}".format(
+        #     self.printDate(acct.statement.start_date)
+        # ), tabs=tabs)
+        # self.writeLine("<DTEND>{0}".format(
+        #     self.printDate(acct.statement.end_date)
+        # ), tabs=tabs)
+
+        for trn in acct.statement.transactions:
+            self.writeInvestTrn(trn, tabs=tabs)
+
+        tabs -= 1
+
+        self.writeLine("</INVSTMTRS>", tabs=tabs)
+
+        self.writeLedgerBal(acct.statement, tabs=tabs)
+        self.writeAvailBal(acct.statement, tabs=tabs)
+
+        tabs -= 1
+
+        self.writeLine("</STMTRS>", tabs=tabs)
+
     def writeStmTrs(self, tabs=3):
         for acct in self.ofx.accounts:
-            self.writeLine("<STMTRS>", tabs=tabs)
-            tabs += 1
-
-            if acct.curdef:
-                self.writeLine("<CURDEF>{0}".format(
-                    acct.curdef
-                ), tabs=tabs)
-
-            if acct.routing_number or acct.account_id or acct.account_type:
-                self.writeLine("<BANKACCTFROM>", tabs=tabs)
-                if acct.routing_number:
-                    self.writeLine("<BANKID>{0}".format(
-                        acct.routing_number
-                    ), tabs=tabs+1)
-                if acct.account_id:
-                    self.writeLine("<ACCTID>{0}".format(
-                        acct.account_id
-                    ), tabs=tabs+1)
-                if acct.account_type:
-                    self.writeLine("<ACCTTYPE>{0}".format(
-                        acct.account_type
-                    ), tabs=tabs+1)
-                self.writeLine("</BANKACCTFROM>", tabs=tabs)
-
-            self.writeLine("<BANKTRANLIST>", tabs=tabs)
-            tabs += 1
-            self.writeLine("<DTSTART>{0}".format(
-                self.printDate(acct.statement.start_date)
-            ), tabs=tabs)
-            self.writeLine("<DTEND>{0}".format(
-                self.printDate(acct.statement.end_date)
-            ), tabs=tabs)
-
-            for trn in acct.statement.transactions:
-                self.writeTrn(trn, tabs=tabs)
-
-            tabs -= 1
-
-            self.writeLine("</BANKTRANLIST>", tabs=tabs)
-
-            self.writeLedgerBal(acct.statement, tabs=tabs)
-            self.writeAvailBal(acct.statement, tabs=tabs)
-
-            tabs -= 1
-
-            self.writeLine("</STMTRS>", tabs=tabs)
+            if acct.type == 1:
+                self.writeBnkAcctStmTrs(tabs,acct)
+            if acct.type == 3:
+                self.writeInvestAcctStmTrs(tabs,acct)
 
     def writeBankMsgsRsv1(self, tabs=1):
         self.writeLine("<BANKMSGSRSV1>", tabs=tabs)
