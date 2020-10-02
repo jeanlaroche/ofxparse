@@ -188,6 +188,11 @@ class OfxPrinter():
         self.writeLine("<INVSTMTRS>", tabs=tabs)
         # tabs += 1
 
+        self.writeLine("<INVACCTFROM>", tabs=tabs)
+        if acct.account_id:
+            self.writeLine("<BROKERID>{0}".format(
+                acct.brokerid
+            ), tabs=tabs)
         if acct.account_id:
             self.writeLine("<ACCTID>{0}".format(
                 acct.account_id
@@ -196,6 +201,7 @@ class OfxPrinter():
             self.writeLine("<ACCTTYPE>{0}".format(
                 acct.account_type
             ), tabs=tabs)
+        self.writeLine("</INVACCTFROM>", tabs=tabs)
 
         # if acct.curdef:
         #     self.writeLine("<CURDEF>{0}".format(
