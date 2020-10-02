@@ -80,8 +80,8 @@ class OfxPrinter():
         self.writeLine("<UNITS>{}".format(float(trn.units)), tabs=tabs)
         self.writeLine("<UNITPRICE>{}".format(float(trn.unit_price)), tabs=tabs)
         self.writeLine("<MKTVALMKTVAL>{}".format(float(trn.market_value)), tabs=tabs)
-        self.writeLine("</POSMF>", tabs=tabs)
         self.writeLine("</INVPOS>", tabs=tabs)
+        self.writeLine("</POSMF>", tabs=tabs)
 
         # tabs -= 1
 
@@ -197,18 +197,21 @@ class OfxPrinter():
                 acct.account_type
             ), tabs=tabs)
 
-        if acct.curdef:
-            self.writeLine("<CURDEF>{0}".format(
-                acct.curdef
-            ), tabs=tabs)
+        # if acct.curdef:
+        #     self.writeLine("<CURDEF>{0}".format(
+        #         acct.curdef
+        #     ), tabs=tabs)
+        self.writeLine("<CURDEF>{0}".format(acct.statement.currency), tabs=tabs)
 
         self.writeLine("<INVTRANLIST>", tabs=tabs)
-        self.writeLine("<DTSTART>{0}".format(
-            self.printDate(acct.statement.start_date)
-        ), tabs=tabs)
-        self.writeLine("<DTEND>{0}".format(
-            self.printDate(acct.statement.end_date)
-        ), tabs=tabs)
+        if hasattr(acct.statement,'start_date'):
+            self.writeLine("<DTSTART>{0}".format(
+                self.printDate(acct.statement.start_date)
+            ), tabs=tabs)
+        if hasattr(acct.statement,'end_date'):
+            self.writeLine("<DTEND>{0}".format(
+                self.printDate(acct.statement.end_date)
+            ), tabs=tabs)
         tabs = 0
         for trn in acct.statement.transactions:
             self.writeInvestTrn(trn, tabs=tabs)
@@ -232,10 +235,10 @@ class OfxPrinter():
             if acct.type == 1:
                 self.writeBnkAcctStmTrs(tabs,acct)
             if acct.type == 3:
-                if not len(acct.statement.transactions): continue
+                # if not len(acct.statement.transactions): continue
                 self.writeInvestAcctStmTrs(tabs,acct)
-                # todo
-                break
+                # # todo
+                # break
 
     def writeBankMsgsRsv1(self, tabs=0):
         if self.ofx.account.type == 1:
