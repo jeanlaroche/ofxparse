@@ -58,6 +58,11 @@ class OfxPrinter():
         if len(trn.memo.strip()) > 0:
             self.writeLine("<MEMO>{}".format(trn.memo), tabs=tabs)
         self.writeLine("</INVTRAN>", tabs=tabs)
+        if hasattr(trn,'security'):
+            self.writeLine("<SECID>", tabs=tabs)
+            self.writeLine("<UNIQUEID>{}".format(trn.security), tabs=tabs)
+            self.writeLine("<UNIQUEIDTYPE>CUSIP", tabs=tabs)
+            self.writeLine("</SECID>", tabs=tabs)
 
         self.writeLine("<INCOMETYPE>{}".format(trn.income_type), tabs=tabs)
         self.writeLine("<UNITS>{}".format(float(trn.units)), tabs=tabs)
@@ -65,7 +70,7 @@ class OfxPrinter():
         self.writeLine("<COMMISSION>{}".format(float(trn.commission)), tabs=tabs)
         self.writeLine("<FEES>{}".format(float(trn.fees)), tabs=tabs)
         self.writeLine("<TOTAL>{}".format(float(trn.total)), tabs=tabs)
-        self.writeLine("<TFERACTION>{}".format(trn.tferaction), tabs=tabs)
+        if trn.tferaction: self.writeLine("<TFERACTION>{}".format(trn.tferaction), tabs=tabs)
         self.writeLine("</{}>".format(trn.type.upper()), tabs=tabs)
 
     def writeInvestPos(self, trn, tabs=0):
@@ -220,7 +225,10 @@ class OfxPrinter():
             ), tabs=tabs)
         tabs = 0
         for trn in acct.statement.transactions:
-            self.writeInvestTrn(trn, tabs=tabs)
+            if trn.type != 'other':
+                self.writeInvestTrn(trn, tabs=tabs)
+            else:
+                self.writeTrn(trn, tabs=tabs)
         self.writeLine("</INVTRANLIST>", tabs=tabs)
 
         # WHAT ABOUT POSITIONS?
@@ -277,9 +285,26 @@ class OfxPrinter():
             self.writeLine("</BANKMSGSRSV1>", tabs=tabs)
         elif self.ofx.account.type == 3:
             # tabs -= 1
+            self.writeLine("</INVSTMTTRNRS>", tabs=tabs)
             self.writeLine("</INVSTMTMSGSRSV1>", tabs=tabs)
             # tabs -= 1
-            self.writeLine("</INVSTMTTRNRS>", tabs=tabs)
+            # Write investment list
+            if hasattr(self.ofx,'security_list'):
+                self.writeLine("<SECLISTMSGSRSV1>", tabs=tabs)
+                self.writeLine("<SECLIST>", tabs=tabs)
+                for item in self.ofx.security_list:
+                    self.writeLine("<MFINFO>", tabs=tabs)
+                    self.writeLine("<SECINFO>", tabs=tabs)
+                    self.writeLine("<SECID>", tabs=tabs)
+                    self.writeLine("<UNIQUEID>{}".format(item.uniqueid), tabs=tabs)
+                    self.writeLine("<UNIQUEIDTYPE>CUSIP", tabs=tabs)
+                    self.writeLine("</SECID>", tabs=tabs)
+                    self.writeLine("<SECNAME>{}".format(item.name), tabs=tabs)
+                    self.writeLine("<TICKER>{}".format(item.ticker), tabs=tabs)
+                    self.writeLine("</SECINFO>", tabs=tabs)
+                    self.writeLine("</MFINFO>", tabs=tabs)
+                self.writeLine("</SECLIST>", tabs=tabs)
+                self.writeLine("</SECLISTMSGSRSV1>", tabs=tabs)
 
     def writeOfx(self, tabs=0):
         self.writeLine("<OFX>", tabs=tabs)
